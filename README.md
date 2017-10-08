@@ -1,0 +1,2 @@
+# graph-cgraph
+O objetivo deste trabalho é implementar uma interface com a biblioteca cgraph que permita ler grafos descritos na linguagem dot em toda sua flexibilidade, sem ter o trabalho de implementar um interpretador para a linguagem. Você pode usar a biblioteca cgraph como quiser para implementar o trabalho. A biblioteca cgraph implementa (entre outras coisas) uma estrutura de dados para a manipulação de grafos e um interpretador ("parser") da linguagem dot.
