@@ -1,6 +1,10 @@
 #include <stdio.h>
 #include "grafo.h"
 #include <graphviz/cgraph.h>
+#include <string.h>
+
+
+char *nomeGrafo;
 
 
 //------------------------------------------------------------------------------
@@ -15,12 +19,15 @@ const int infinito = 0;
 // 
 // o grafo tem um nome, que é uma "string"
 
+
 struct grafo {
   bool directed;
   char *name;
   int num_nodes;
   int num_edges;
 };
+
+struct grafo *graph;
 
 struct vertice {
   char *name;
@@ -39,8 +46,9 @@ char *nome_grafo(grafo g) {
 //         NULL, caso não exista tal grafo
 
 grafo grafo_nome(char *s) {
-  
-  return NULL;
+
+  // if zero, means that equals (and call second statement return), so return graph
+  return strcmp(s, nomeGrafo) ? NULL : graph;
 }
 //------------------------------------------------------------------------------
 // devolve 1, se g é direcionado,
@@ -89,13 +97,12 @@ int destroi_grafo(grafo g) {
 grafo le_grafo(FILE *input) {
   
   Agraph_t *g;
-  struct grafo *grafo;
-  char *nomeGrafo;
+  // struct grafo *grafo;
   int num_nodes, num_edges = 0;
 
-  grafo = malloc(sizeof(struct grafo));
+  graph = malloc(sizeof(struct grafo));
   
-  if (!grafo){
+  if (!graph){
     printf("Can't malloc my graph\n");
     return NULL;
   }
@@ -106,20 +113,20 @@ grafo le_grafo(FILE *input) {
 
   //read from g ( * to Agraph_t structure ), and 
   //populate our structure grafo (* to grafo) the necessary parameters
-  grafo->name = agnameof(g);
-  grafo->directed = agisdirected(g);
-  grafo->num_nodes = agnnodes(g);
-  grafo->num_edges = agnedges(g);
+  graph->name = agnameof(g);
+  graph->directed = agisdirected(g);
+  graph->num_nodes = agnnodes(g);
+  graph->num_edges = agnedges(g);
 
-  nomeGrafo = nome_grafo(grafo);
-  num_nodes = numero_vertices(grafo);
-  num_edges = numero_arestas(grafo);
+  nomeGrafo = nome_grafo(graph);
+  num_nodes = numero_vertices(graph);
+  num_edges = numero_arestas(graph);
 
   printf("Name of my graph *grafo: %s\n", nomeGrafo);
   printf("My dot graph written: \n");
   g = agwrite(g, stdout);
 
-  return grafo;
+  return graph;
 }
 //------------------------------------------------------------------------------
 // escreve o grafo g em output usando o formato dot.
