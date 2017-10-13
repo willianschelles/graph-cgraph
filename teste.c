@@ -5,9 +5,11 @@
 
 //------------------------------------------------------------------------------
 
-int main(void) {
+int main(int argc, char **argv) {
 
-  grafo g = le_grafo(stdin);
+  printf("namefile %s\n\n", argv[1]);
+  FILE *inpunt = fopen(argv[1], "r");
+  grafo g = le_grafo(inpunt);
   int d = diametro(g);
 
   if ( !g )
@@ -19,6 +21,9 @@ int main(void) {
   printf("%d arestas\n", numero_arestas(g));
   printf("%sdirecionado\n", direcionado(g) ? "" : "não ");
   printf("%sbipartido\n", bipartido(g) ? "" : "não ");
+  
+  if (grafo_nome("testGraph") != NULL)
+    printf("grafo_nome esta certo? sim!");
 
   if (d == infinito)
     printf("diâmetro = oo\n");
