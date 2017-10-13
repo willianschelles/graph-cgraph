@@ -3,7 +3,8 @@
 #include <graphviz/cgraph.h>
 #include <string.h>
 
-
+void loadVertices(Agraph_t *agraph, grafo graph);
+  
 char *nomeGrafo;
 
 
@@ -20,17 +21,28 @@ const int infinito = 0;
 // o grafo tem um nome, que é uma "string"
 
 
+struct grafo *graph;
+
+struct edge {
+  struct vertice *from;
+  struct vertice *to;
+};
+
+struct vertice {
+  int degree;
+  char *name;
+  bool visited;
+  struct vertice  *next;
+  struct edge *edges;
+};
+
 struct grafo {
   bool directed;
   char *name;
-  int num_nodes;
+  int num_vertice;
   int num_edges;
-};
-
-struct grafo *graph;
-
-struct vertice {
-  char *name;
+  struct vertice *vertices;
+  struct aresta  *arestas;
 };
 
 //------------------------------------------------------------------------------
@@ -50,6 +62,7 @@ grafo grafo_nome(char *s) {
   // if zero, means that equals (and call second statement return), so return graph
   return strcmp(s, nomeGrafo) ? NULL : graph;
 }
+
 //------------------------------------------------------------------------------
 // devolve 1, se g é direcionado,
 //         ou 
@@ -64,7 +77,7 @@ int direcionado(grafo g) {
 
 unsigned int numero_vertices(grafo g) {
   
-  return g->num_nodes;
+  return g->num_vertice;
 }
 //------------------------------------------------------------------------------
 // devolve o número de arestas/arcos do grafo g
@@ -96,9 +109,15 @@ int destroi_grafo(grafo g) {
 
 grafo le_grafo(FILE *input) {
   
-  Agraph_t *g;
-  // struct grafo *grafo;
-  int num_nodes, num_edges = 0;
+  Agraph_t *agraph;
+  static int num_vertice, num_edges = 0;
+  
+  
+  //assing to agraph ( * to Agraph_t structure ), reading by cgraph library
+  //with input in dot description language passed in "input"
+  agraph = agread(input, 0);
+
+  if (!agraph) return NULL;
 
   graph = malloc(sizeof(struct grafo));
   
@@ -106,27 +125,51 @@ grafo le_grafo(FILE *input) {
     printf("Can't malloc my graph\n");
     return NULL;
   }
-  
-  //assing to g ( * to Agraph_t structure ), reading by cgraph library
-  //with input in dot description language passed in "input"
-  g = agread(input, 0);
 
   //read from g ( * to Agraph_t structure ), and 
   //populate our structure grafo (* to grafo) the necessary parameters
-  graph->name = agnameof(g);
-  graph->directed = agisdirected(g);
-  graph->num_nodes = agnnodes(g);
-  graph->num_edges = agnedges(g);
+  graph->name = agnameof(agraph);
+  graph->directed = agisdirected(agraph);
+  graph->num_vertice = agnnodes(agraph);
+  graph->num_edges = agnedges(agraph);
 
   nomeGrafo = nome_grafo(graph);
-  num_nodes = numero_vertices(graph);
+  num_vertice = numero_vertices(graph);
   num_edges = numero_arestas(graph);
+
+  loadVertices(agraph, graph);
 
   printf("Name of my graph *grafo: %s\n", nomeGrafo);
   printf("My dot graph written: \n");
-  g = agwrite(g, stdout);
+  agraph = agwrite(agraph, stdout);
+
 
   return graph;
+}
+
+void loadVertices(Agraph_t *agraph, grafo graph){
+
+  Agnode_t *v;
+  char *nodename;
+  int i = 0;
+
+  graph->vertices = (struct vertice *) NULL;
+  graph->vertices = malloc(graph->num_vertice * sizeof(struct vertice));
+  
+  for (v = agfstnode(agraph); v; v = agnxtnode(agraph, v)){
+      nodename = agnameof(v);
+      graph->vertices[i].name = nodename;
+      graph->vertices[i].visited = false;
+      ++i;
+  }
+ 
+  printf("\n\nIname of my nodes from my structure\n");
+  for (int i = 0; i < graph->num_vertice; ++i){
+    printf("%s  " ,graph->vertices[i].name);
+    printf("%d  " ,graph->vertices[i].visited);
+  }
+
+  printf("\n\n");
 }
 //------------------------------------------------------------------------------
 // escreve o grafo g em output usando o formato dot.
@@ -173,6 +216,8 @@ vertice vertice_nome(char *s, grafo g) {
 
 unsigned int grau(vertice v, int direcao, grafo g) {
 
+  // Agnode_t *agnode(Agraph_t *g, char *name, int createflag);
+  // int agdegree(Agraph_t *g, Agnode_t *n, int use_inedges, int use_outedges);
   return 0;
 }
 //------------------------------------------------------------------------------
@@ -216,6 +261,7 @@ int simplicial(vertice v, grafo g) {
 
 return 0;
 }
+
 //------------------------------------------------------------------------------
 // devolve 1, se g é um grafo bipartido, 
 //         ou
