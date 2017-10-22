@@ -4,6 +4,7 @@
 #include <string.h>
 
 int loadVertices(Agraph_t *agraph, grafo graph);
+char *nome_vertice(vertice v);
 int verticeNumber, edgeNumber = 0;
 
 char *nomeGrafo;
@@ -113,8 +114,7 @@ grafo le_grafo(FILE *input) {
   
   Agraph_t *agraph;
   int ret = 0;
-  
-  
+
   //assing to agraph ( * to Agraph_t structure ), reading by cgraph library
   //with input in dot description language passed in "input"
   agraph = agread(input, 0);
@@ -167,12 +167,22 @@ int loadVertices(Agraph_t *agraph, grafo graph) {
       graph->vertices[i].name = nodename;
       graph->vertices[i].visited = false;
       graph->vertices[i].degree = agdegree(agraph, v, TRUE, TRUE);
+
+      /*
+       * Testing if functions nome_vertice(v) and grau(v, direcao, g) is working 
+
+       char * nomeVertice = nome_vertice(v);
+      printf("\nName of my vertice: %s\n", nomeVertice);
+      
+      unsigned int teste = grau(v,-1,graph);
+      printf("\nDegree of my vertice: %d\n", teste);
+      */      
+
       ret = loadEdges(agraph, v, graph);
       ++i;
-      // printf("\nmy degree of node %s is: %d\n", nodename, graph->vertices[i].degree);
   }
 
-  printVertices(graph);
+  // printVertices(graph);
   // printEdges(graph);
   printf("\n\n");
   return 0;
@@ -195,13 +205,12 @@ int loadEdges(Agraph_t *agraph, Agnode_t *v, grafo graph) {
     graph->edges[edgeNumber].to.name = edgesOfV.to.name;
     // printf("\nvertice from: %s - vertice to: %s\n",  edgesOfV.from,  edgesOfV.to);
     // graph->edges[edgeNumber].from.name,  graph->edges[edgeNumber].to.name);
-    printEdges(graph);
+    // printEdges(graph);
     nextEdges = agnxtedge(agraph, aEdge, v);
     aEdge = nextEdges;
     ++edgeNumber;
   
   }
-  
   return 0;
 }
 
@@ -213,6 +222,7 @@ void printVertices(grafo graph) {
     printf("%d  " ,graph->vertices[i].visited);
     printf("%d  \n" ,graph->vertices[i].degree);
   }
+  return;
 }
 
 void printEdges(grafo graph) {
@@ -222,6 +232,7 @@ void printEdges(grafo graph) {
   printf("%s  " , graph->edges[edgeNumber].from.name);
   printf("TO: ");    
   printf("%s  \n", graph->edges[edgeNumber].to.name);
+  return;
 }
 
 //------------------------------------------------------------------------------
@@ -247,7 +258,7 @@ grafo escreve_grafo(FILE *output, grafo g) {
 
 char *nome_vertice(vertice v){
 
-  return NULL;
+  return v->name;
 }
 //------------------------------------------------------------------------------
 // devolve um vertice de nome s no grafo g,
@@ -263,15 +274,24 @@ vertice vertice_nome(char *s, grafo g) {
 // 
 // se g é direcionado, e 
 //                       direcao =  1, o grau devolvido é o de saída
-//                       direcao = -1, o grai devolvido é o de entrada
+//                       direcao = -1, o grau devolvido é o de entrada
 //                
 // caso contrário o valor de direcao é ignorado.                  
 
 unsigned int grau(vertice v, int direcao, grafo g) {
 
-  // Agnode_t *agnode(Agraph_t *g, char *name, int createflag);
-  // int agdegree(Agraph_t *g, Agnode_t *n, int use_inedges, int use_outedges);
-  return 0;
+  unsigned int degree = 0;
+  for (int i = 0; i < edgeNumber; ++i) {
+    
+    if (direcao == 0 || direcao == 1) {
+      g->edges[i].from.name == nome_vertice(v) ? ++degree : 0 ;
+    }
+    if (direcao == 0 || direcao == -1) {
+      g->edges[i].to.name == nome_vertice(v) ? ++degree : 0;
+    }
+  }
+  
+  return degree;
 }
 //------------------------------------------------------------------------------
 // devolve o "primeiro" vizinho de v em g,
