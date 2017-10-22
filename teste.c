@@ -7,7 +7,6 @@
 
 int main(int argc, char **argv) {
 
-  printf("namefile %s\n\n", argv[1]);
   FILE *inpunt = fopen(argv[1], "r");
   grafo g = le_grafo(inpunt);
   int d = diametro(g);
