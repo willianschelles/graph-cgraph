@@ -3,8 +3,9 @@
 #include <graphviz/cgraph.h>
 #include <string.h>
 
-void loadVertices(Agraph_t *agraph, grafo graph);
-  
+int loadVertices(Agraph_t *agraph, grafo graph);
+int verticeNumber, edgeNumber = 0;
+
 char *nomeGrafo;
 
 
@@ -23,10 +24,6 @@ const int infinito = 0;
 
 struct grafo *graph;
 
-struct edge {
-  struct vertice *from;
-  struct vertice *to;
-};
 
 struct vertice {
   int degree;
@@ -36,13 +33,18 @@ struct vertice {
   struct edge *edges;
 };
 
+struct edge {
+  struct vertice from;
+  struct vertice to;
+};
+
 struct grafo {
   bool directed;
   char *name;
   int num_vertice;
   int num_edges;
+  struct edge    *edges;
   struct vertice *vertices;
-  struct aresta  *arestas;
 };
 
 //------------------------------------------------------------------------------
@@ -110,7 +112,7 @@ int destroi_grafo(grafo g) {
 grafo le_grafo(FILE *input) {
   
   Agraph_t *agraph;
-  static int num_vertice, num_edges = 0;
+  int ret = 0;
   
   
   //assing to agraph ( * to Agraph_t structure ), reading by cgraph library
@@ -134,43 +136,94 @@ grafo le_grafo(FILE *input) {
   graph->num_edges = agnedges(agraph);
 
   nomeGrafo = nome_grafo(graph);
-  num_vertice = numero_vertices(graph);
-  num_edges = numero_arestas(graph);
+  // num_vertice = numero_vertices(graph);
+  // num_edges = numero_arestas(graph);
 
-  loadVertices(agraph, graph);
+  ret = loadVertices(agraph, graph);
+
+  if (ret < 0) return NULL;
 
   printf("Name of my graph *grafo: %s\n", nomeGrafo);
   printf("My dot graph written: \n");
   agraph = agwrite(agraph, stdout);
 
-
   return graph;
 }
 
-void loadVertices(Agraph_t *agraph, grafo graph){
+int loadVertices(Agraph_t *agraph, grafo graph) {
 
   Agnode_t *v;
   char *nodename;
-  int i = 0;
+  int ret, i = 0;
 
   graph->vertices = (struct vertice *) NULL;
   graph->vertices = malloc(graph->num_vertice * sizeof(struct vertice));
   
+  if (!graph->vertices) return -1;
+  
   for (v = agfstnode(agraph); v; v = agnxtnode(agraph, v)){
+      // int grau = agdegree(agraph, v, TRUE, TRUE);
       nodename = agnameof(v);
       graph->vertices[i].name = nodename;
       graph->vertices[i].visited = false;
+      graph->vertices[i].degree = agdegree(agraph, v, TRUE, TRUE);
+      ret = loadEdges(agraph, v, graph);
       ++i;
-  }
- 
-  printf("\n\nIname of my nodes from my structure\n");
-  for (int i = 0; i < graph->num_vertice; ++i){
-    printf("%s  " ,graph->vertices[i].name);
-    printf("%d  " ,graph->vertices[i].visited);
+      // printf("\nmy degree of node %s is: %d\n", nodename, graph->vertices[i].degree);
   }
 
+  printVertices(graph);
+  // printEdges(graph);
   printf("\n\n");
+  return 0;
 }
+
+int loadEdges(Agraph_t *agraph, Agnode_t *v, grafo graph) {
+
+  Agedge_t *aEdge = agfstedge(agraph, v);
+  Agedge_t *nextEdges = NULL;
+  graph->edges = malloc(graph->num_edges * sizeof(struct edge));
+  
+  int degree = agdegree(agraph, v, TRUE, TRUE);
+  // printf("\n***Vertice: [%s]***\n", agnameof(v));
+
+  for (int i = 0; i < degree; ++i) {
+    struct edge edgesOfV;
+    edgesOfV.from.name = agnameof(agtail(aEdge));
+    edgesOfV.to.name = agnameof(aghead(aEdge));
+    graph->edges[edgeNumber].from.name = edgesOfV.from.name;
+    graph->edges[edgeNumber].to.name = edgesOfV.to.name;
+    // printf("\nvertice from: %s - vertice to: %s\n",  edgesOfV.from,  edgesOfV.to);
+    // graph->edges[edgeNumber].from.name,  graph->edges[edgeNumber].to.name);
+    printEdges(graph);
+    nextEdges = agnxtedge(agraph, aEdge, v);
+    aEdge = nextEdges;
+    ++edgeNumber;
+  
+  }
+  
+  return 0;
+}
+
+void printVertices(grafo graph) {
+
+  printf("\n\nIname of my nodes from my structure\n");
+  for (int i = 0; i < graph->num_vertice; i++){
+    printf("%s  " ,graph->vertices[i].name);
+    printf("%d  " ,graph->vertices[i].visited);
+    printf("%d  \n" ,graph->vertices[i].degree);
+  }
+}
+
+void printEdges(grafo graph) {
+
+  printf("\n\nIEdges from my structure\n");
+  printf("FROM: ");    
+  printf("%s  " , graph->edges[edgeNumber].from.name);
+  printf("TO: ");    
+  printf("%s  \n", graph->edges[edgeNumber].to.name);
+}
+
 //------------------------------------------------------------------------------
 // escreve o grafo g em output usando o formato dot.
 //
