@@ -141,6 +141,7 @@ grafo le_grafo(FILE *input) {
 
   ret = loadVertices(agraph, graph);
 
+  
   if (ret < 0) return NULL;
 
   printf("Name of my graph *grafo: %s\n", nomeGrafo);
@@ -168,20 +169,28 @@ int loadVertices(Agraph_t *agraph, grafo graph) {
       graph->vertices[i].visited = false;
       graph->vertices[i].degree = agdegree(agraph, v, TRUE, TRUE);
 
+      ret = loadEdges(agraph, v, graph);
+      ++i;
+
       /*
-       * Testing if functions nome_vertice(v) and grau(v, direcao, g) is working 
+       * Testing if functions nome_vertice(v) and
+       *                      grau(v, direcao, g) and
+       *                      vertice_nome("x", graph) and 
+       *                      primeiro_vizinho(v, 0, graph); is working 
 
        char * nomeVertice = nome_vertice(v);
       printf("\nName of my vertice: %s\n", nomeVertice);
       
       unsigned int teste = grau(v,-1,graph);
       printf("\nDegree of my vertice: %d\n", teste);
-      */      
-
-      ret = loadEdges(agraph, v, graph);
-      ++i;
+      
+      vertice teste = vertice_nome("x", graph);
+      if (teste != NULL) printf("\nI'm NOT a NULL", teste);
+      // vertice firstVertex = vertice_nome("d", graph);
+      vertice teste = primeiro_vizinho(v, 0, graph);
+      if (teste != NULL) printf("\n\nSou vizinho de entrada (1) de %s, i'm %s\n\n",nodename, teste->name);
+      */         
   }
-
   // printVertices(graph);
   // printEdges(graph);
   printf("\n\n");
@@ -267,6 +276,12 @@ char *nome_vertice(vertice v){
 
 vertice vertice_nome(char *s, grafo g) {
   
+  for (int i = 0; i < g->num_vertice; i++){
+    
+    if (!strcmp(s, g->vertices[i].name)) {
+      return (vertice)&g->vertices[i];
+    }
+  }
   return NULL;
 }
 //------------------------------------------------------------------------------
@@ -299,13 +314,35 @@ unsigned int grau(vertice v, int direcao, grafo g) {
 //         NULL se v é vértice isolado em g
 //
 // se g é direcionado, e 
-//                       direcao =  1, o vizinho devolvido é de saída
-//                       direcao = -1, o vizinho devolvido é de entrada
+//                       direcao =  1, o vizinho devolvido é de saída   ->to
+//                       direcao = -1, o vizinho devolvido é de entrada ->from
 //                
-// caso contrário o valor de direcao é ignorado.                  
-
+// caso contrário o valor de direcao é ignorado e será retornado o vizinho de entrada.                  
+// se o vizinho foi encontrado no to, devolve from e vice-versa
 vertice primeiro_vizinho(vertice v, int direcao, grafo g) {
 
+  for (int i = 0; i < edgeNumber; ++i) {
+    if (g->edges[i].to.name != NULL && g->edges[i].from.name != NULL)
+      printf("\ng->edges[i].to.name %s  |   g->edges[i].from.name %s  \n",\
+            g->edges[i].to.name, g->edges[i].from.name);
+
+    if (direcao == -1) {
+      if (g->edges[i].from.name == nome_vertice(v)) {
+        return (vertice)&g->edges[i].to;
+      }
+    }
+    if (direcao = 1) {
+      if (g->edges[i].to.name == nome_vertice(v)) {
+        return (vertice)&g->edges[i].from;
+      }
+    } 
+    else {
+      if (((g->edges[i].to.name == nome_vertice(v)) || g->edges[i].from.name == nome_vertice(v))){
+        if (g->edges[i].to.name != NULL) return  g->edges[i].from.name;
+        return g->edges[i].to.name;
+      }
+    }
+  }
   return NULL;
 }
 //------------------------------------------------------------------------------
