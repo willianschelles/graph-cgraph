@@ -2,14 +2,17 @@
 #include "grafo.h"
 #include <graphviz/cgraph.h>
 #include <string.h>
+#include <stdlib.h>
+
+typedef struct list *list;
 
 int loadVertices(Agraph_t *agraph, grafo graph);
+struct vertice* createVertice(char *name);
 char *nome_vertice(vertice v);
-int verticeNumber, edgeNumber = 0;
+int vertexNumber = -1; 
+int edgeNumber = 0;
 
 char *nomeGrafo;
-
-
 //------------------------------------------------------------------------------
 // o valor que representa "infinito"
 
@@ -22,31 +25,104 @@ const int infinito = 0;
 // 
 // o grafo tem um nome, que é uma "string"
 
-
 struct grafo *graph;
 
-
 struct vertice {
-  int degree;
   char *name;
-  bool visited;
-  struct vertice  *next;
-  struct edge *edges;
+  list adjList;
 };
 
-struct edge {
-  struct vertice from;
-  struct vertice to;
+struct list {
+  unsigned int length;
+  list next;
+  char *vertexName; // pointer to head node of list
 };
 
 struct grafo {
-  bool directed;
-  char *name;
-  int num_vertice;
   int num_edges;
-  struct edge    *edges;
-  struct vertice *vertices;
+  int num_vertices;
+  char *name;
+  bool directed;
+  vertice vertices;
 };
+
+char *vertexName(vertice v) { return v->name; }
+vertice nextVertex(list adjList) { return adjList->next; }
+unsigned int listLength( list adjList) { return adjList->length; }
+
+list createList(vertice v) {
+  list adjList = (struct list*) malloc(sizeof(struct list));
+  
+  if (!adjList) return NULL;
+  
+  adjList->length = 0;
+  adjList->next = NULL;
+  adjList->vertexName = NULL;
+
+  return adjList;
+}
+
+
+void insertsNode(char *name, list adjList, int qttdEdges) {
+  list current = adjList;
+  
+  if (qttdEdges == 0) {
+    adjList->length++;
+    adjList->vertexName = name;
+    adjList->next = NULL;
+
+    return;
+  }
+
+  while (adjList->next != NULL) //Travels the list to the end
+    adjList = adjList->next;
+
+  /*Now we can add a new variable*/
+  adjList->next = malloc(sizeof(list));
+  adjList->next->length++;
+  adjList->next->vertexName = name;
+  adjList->next->next = NULL;
+
+  return;
+}
+
+
+int loadVerticesAndEdges(Agraph_t *agraph, struct grafo *graph){
+  Agnode_t *aNode;
+  Agedge_t *e;
+  char *nameSrc;
+  char *nameDst;
+  char *nodeName;
+  int ret, i = 0;
+  int qttdEdges;
+  struct vertice* v = malloc(sizeof(struct vertice));
+  
+  //create node and his edges
+  for (aNode = agfstnode(agraph); aNode; aNode = agnxtnode(agraph, aNode)){
+    nodeName = agnameof(aNode);
+    v = createVertice(nodeName);
+    graph->vertices[i].name = v->name;
+    graph->vertices[i].adjList = createList(v); 
+    qttdEdges = 0;   
+    for (e = agfstout(agraph, aNode); e; e = agnxtout(agraph, e)) {
+      // nameSrc = agnameof(agtail(e));
+      nameDst = agnameof(aghead(e));    
+      // graph->vertices[i].adjList = 
+      insertsNode(nameDst, graph->vertices[i].adjList, qttdEdges);
+      qttdEdges++;
+      // graph->vertices[i].adjList = v->adjList;
+    }
+    ++i;
+  }
+}
+
+
+struct vertice* createVertice(char *name) { 
+    struct vertice* newVertex = (struct vertice*) malloc(sizeof(struct vertice));
+    newVertex->name = name;
+    newVertex->adjList = NULL;
+    return newVertex;
+}
 
 //------------------------------------------------------------------------------
 // devolve o nome do grafo g
@@ -80,7 +156,7 @@ int direcionado(grafo g) {
 
 unsigned int numero_vertices(grafo g) {
   
-  return g->num_vertice;
+  return g->num_vertices;
 }
 //------------------------------------------------------------------------------
 // devolve o número de arestas/arcos do grafo g
@@ -103,6 +179,30 @@ int destroi_grafo(grafo g) {
   return !g ? 1 : 0;
 }
 
+
+void printVertices(grafo graph) {
+  
+  for (int i = 0; i < graph->num_vertices; ++i) {
+    printf("\n%s-->", graph->vertices[i].name);
+    
+    while (graph->vertices[i].adjList != NULL) {
+      if (graph->vertices[i].adjList->vertexName != NULL)
+        printf("|%s|-|->", graph->vertices[i].adjList->vertexName);
+      graph->vertices[i].adjList = graph->vertices[i].adjList->next;
+    }
+    printf("\n");
+  }
+}
+
+grafo createGraph(int num_vertices) {
+  graph = malloc(sizeof(struct grafo));
+  graph->vertices = malloc(num_vertices * sizeof(struct vertice));
+
+  for (int i = 0; i < num_vertices; ++i) {
+    // graph->vertices[i] = NULL;
+  }
+}
+
 //------------------------------------------------------------------------------
 // lê um grafo no formato dot de input
 // 
@@ -114,34 +214,37 @@ grafo le_grafo(FILE *input) {
   
   Agraph_t *agraph;
   int ret = 0;
-
   //assing to agraph ( * to Agraph_t structure ), reading by cgraph library
   //with input in dot description language passed in "input"
   agraph = agread(input, 0);
 
   if (!agraph) return NULL;
 
+  int num_vertices = agnnodes(agraph);
+  // graph = createGraph(num_vertices);
   graph = malloc(sizeof(struct grafo));
+  graph->vertices = malloc(num_vertices * sizeof(struct vertice));
+
   
   if (!graph){
     printf("Can't malloc my graph\n");
     return NULL;
   }
-
+  
   //read from g ( * to Agraph_t structure ), and 
   //populate our structure grafo (* to grafo) the necessary parameters
   graph->name = agnameof(agraph);
   graph->directed = agisdirected(agraph);
-  graph->num_vertice = agnnodes(agraph);
+  graph->num_vertices = agnnodes(agraph);
   graph->num_edges = agnedges(agraph);
-
+  
   nomeGrafo = nome_grafo(graph);
   // num_vertice = numero_vertices(graph);
   // num_edges = numero_arestas(graph);
-
-  ret = loadVertices(agraph, graph);
-
-  
+  ret = loadVerticesAndEdges(agraph, graph);
+  printVertices(graph);
+  // ret = loadEdges(agraph, graph);
+  // printGraph(graph);
   if (ret < 0) return NULL;
 
   printf("Name of my graph *grafo: %s\n", nomeGrafo);
@@ -151,98 +254,7 @@ grafo le_grafo(FILE *input) {
   return graph;
 }
 
-int loadVertices(Agraph_t *agraph, grafo graph) {
 
-  Agnode_t *v;
-  char *nodename;
-  int ret, i = 0;
-
-  graph->vertices = (struct vertice *) NULL;
-  graph->vertices = malloc(graph->num_vertice * sizeof(struct vertice));
-  
-  if (!graph->vertices) return -1;
-  
-  for (v = agfstnode(agraph); v; v = agnxtnode(agraph, v)){
-      // int grau = agdegree(agraph, v, TRUE, TRUE);
-      nodename = agnameof(v);
-      graph->vertices[i].name = nodename;
-      graph->vertices[i].visited = false;
-      graph->vertices[i].degree = agdegree(agraph, v, TRUE, TRUE);
-
-      ret = loadEdges(agraph, v, graph);
-      ++i;
-
-      /*
-       * Testing if functions nome_vertice(v) and
-       *                      grau(v, direcao, g) and
-       *                      vertice_nome("x", graph) and 
-       *                      primeiro_vizinho(v, 0, graph); is working 
-
-       char * nomeVertice = nome_vertice(v);
-      printf("\nName of my vertice: %s\n", nomeVertice);
-      
-      unsigned int teste = grau(v,-1,graph);
-      printf("\nDegree of my vertice: %d\n", teste);
-      
-      vertice teste = vertice_nome("x", graph);
-      if (teste != NULL) printf("\nI'm NOT a NULL", teste);
-      // vertice firstVertex = vertice_nome("d", graph);
-      vertice teste = primeiro_vizinho(v, 0, graph);
-      if (teste != NULL) printf("\n\nSou vizinho de entrada (1) de %s, i'm %s\n\n",nodename, teste->name);
-      */         
-  }
-  // printVertices(graph);
-  // printEdges(graph);
-  printf("\n\n");
-  return 0;
-}
-
-int loadEdges(Agraph_t *agraph, Agnode_t *v, grafo graph) {
-
-  Agedge_t *aEdge = agfstedge(agraph, v);
-  Agedge_t *nextEdges = NULL;
-  graph->edges = malloc(graph->num_edges * sizeof(struct edge));
-  
-  int degree = agdegree(agraph, v, TRUE, TRUE);
-  // printf("\n***Vertice: [%s]***\n", agnameof(v));
-
-  for (int i = 0; i < degree; ++i) {
-    struct edge edgesOfV;
-    edgesOfV.from.name = agnameof(agtail(aEdge));
-    edgesOfV.to.name = agnameof(aghead(aEdge));
-    graph->edges[edgeNumber].from.name = edgesOfV.from.name;
-    graph->edges[edgeNumber].to.name = edgesOfV.to.name;
-    // printf("\nvertice from: %s - vertice to: %s\n",  edgesOfV.from,  edgesOfV.to);
-    // graph->edges[edgeNumber].from.name,  graph->edges[edgeNumber].to.name);
-    // printEdges(graph);
-    nextEdges = agnxtedge(agraph, aEdge, v);
-    aEdge = nextEdges;
-    ++edgeNumber;
-  
-  }
-  return 0;
-}
-
-void printVertices(grafo graph) {
-
-  printf("\n\nIname of my nodes from my structure\n");
-  for (int i = 0; i < graph->num_vertice; i++){
-    printf("%s  " ,graph->vertices[i].name);
-    printf("%d  " ,graph->vertices[i].visited);
-    printf("%d  \n" ,graph->vertices[i].degree);
-  }
-  return;
-}
-
-void printEdges(grafo graph) {
-
-  printf("\n\nIEdges from my structure\n");
-  printf("FROM: ");    
-  printf("%s  " , graph->edges[edgeNumber].from.name);
-  printf("TO: ");    
-  printf("%s  \n", graph->edges[edgeNumber].to.name);
-  return;
-}
 
 //------------------------------------------------------------------------------
 // escreve o grafo g em output usando o formato dot.
@@ -276,11 +288,11 @@ char *nome_vertice(vertice v){
 
 vertice vertice_nome(char *s, grafo g) {
   
-  for (int i = 0; i < g->num_vertice; i++){
+  for (int i = 0; i < g->num_vertices; i++){
     
-    if (!strcmp(s, g->vertices[i].name)) {
-      return (vertice)&g->vertices[i];
-    }
+    // if (!strcmp(s, g->adjLists[i].name)) {
+    //   return (vertice)&g->vertices[i];
+    // }
   }
   return NULL;
 }
@@ -293,115 +305,115 @@ vertice vertice_nome(char *s, grafo g) {
 //                
 // caso contrário o valor de direcao é ignorado.                  
 
-unsigned int grau(vertice v, int direcao, grafo g) {
+// unsigned int grau(vertice v, int direcao, grafo g) {
 
-  unsigned int degree = 0;
-  for (int i = 0; i < edgeNumber; ++i) {
+//   unsigned int degree = 0;
+//   for (int i = 0; i < edgeNumber; ++i) {
     
-    if (direcao == 0 || direcao == 1) {
-      g->edges[i].from.name == nome_vertice(v) ? ++degree : 0 ;
-    }
-    if (direcao == 0 || direcao == -1) {
-      g->edges[i].to.name == nome_vertice(v) ? ++degree : 0;
-    }
-  }
+//     if (direcao == 0 || direcao == 1) {
+//       g->edges[i].from.name == nome_vertice(v) ? ++degree : 0 ;
+//     }
+//     if (direcao == 0 || direcao == -1) {
+//       g->edges[i].to.name == nome_vertice(v) ? ++degree : 0;
+//     }
+//   }
   
-  return degree;
-}
-//------------------------------------------------------------------------------
-// devolve o "primeiro" vizinho de v em g,
-//         ou
-//         NULL se v é vértice isolado em g
-//
-// se g é direcionado, e 
-//                       direcao =  1, o vizinho devolvido é de saída   ->to
-//                       direcao = -1, o vizinho devolvido é de entrada ->from
-//                
-// caso contrário o valor de direcao é ignorado e será retornado o vizinho de entrada.                  
-// se o vizinho foi encontrado no to, devolve from e vice-versa
-vertice primeiro_vizinho(vertice v, int direcao, grafo g) {
+//   return degree;
+// }
+// //------------------------------------------------------------------------------
+// // devolve o "primeiro" vizinho de v em g,
+// //         ou
+// //         NULL se v é vértice isolado em g
+// //
+// // se g é direcionado, e 
+// //                       direcao =  1, o vizinho devolvido é de saída   ->to
+// //                       direcao = -1, o vizinho devolvido é de entrada ->from
+// //                
+// // caso contrário o valor de direcao é ignorado e será retornado o vizinho de entrada.                  
+// // se o vizinho foi encontrado no to, devolve from e vice-versa
+// vertice primeiro_vizinho(vertice v, int direcao, grafo g) {
 
-  for (int i = 0; i < edgeNumber; ++i) {
-    if (g->edges[i].to.name != NULL && g->edges[i].from.name != NULL)
-      printf("\ng->edges[i].to.name %s  |   g->edges[i].from.name %s  \n",\
-            g->edges[i].to.name, g->edges[i].from.name);
+//   for (int i = 0; i < edgeNumber; ++i) {
+//     if (g->edges[i].to.name != NULL && g->edges[i].from.name != NULL)
+//       printf("\ng->edges[i].to.name %s  |   g->edges[i].from.name %s  \n",\
+//             g->edges[i].to.name, g->edges[i].from.name);
 
-    if (direcao == -1) {
-      if (g->edges[i].from.name == nome_vertice(v)) {
-        return (vertice)&g->edges[i].to;
-      }
-    }
-    if (direcao = 1) {
-      if (g->edges[i].to.name == nome_vertice(v)) {
-        return (vertice)&g->edges[i].from;
-      }
-    } 
-    else {
-      if (((g->edges[i].to.name == nome_vertice(v)) || g->edges[i].from.name == nome_vertice(v))){
-        if (g->edges[i].to.name != NULL) return  g->edges[i].from.name;
-        return g->edges[i].to.name;
-      }
-    }
-  }
-  return NULL;
-}
-//------------------------------------------------------------------------------
-// devolve o "próximo" vizinho de v em g após u,
-//         ou
-//         NULL se u é o "último" vizinho de v em g
-//
-// se g é direcionado, e 
-//                       direcao =  1, o vizinho devolvido é de saída
-//                       direcao = -1, o vizinho devolvido é de entrada
-//                
-// caso contrário o valor de direcao é ignorado.                  
+//     if (direcao == -1) {
+//       if (g->edges[i].from.name == nome_vertice(v)) {
+//         return (vertice)&g->edges[i].to;
+//       }
+//     }
+//     if (direcao = 1) {
+//       if (g->edges[i].to.name == nome_vertice(v)) {
+//         return (vertice)&g->edges[i].from;
+//       }
+//     } 
+//     else {
+//       if (((g->edges[i].to.name == nome_vertice(v)) || g->edges[i].from.name == nome_vertice(v))){
+//         if (g->edges[i].to.name != NULL) return  g->edges[i].from.name;
+//         return g->edges[i].to.name;
+//       }
+//     }
+//   }
+//   return NULL;
+// }
+// //------------------------------------------------------------------------------
+// // devolve o "próximo" vizinho de v em g após u,
+// //         ou
+// //         NULL se u é o "último" vizinho de v em g
+// //
+// // se g é direcionado, e 
+// //                       direcao =  1, o vizinho devolvido é de saída
+// //                       direcao = -1, o vizinho devolvido é de entrada
+// //                
+// // caso contrário o valor de direcao é ignorado.                  
 
-vertice proximo_vizinho(vertice u, vertice v, int direcao, grafo g) {
+// vertice proximo_vizinho(vertice u, vertice v, int direcao, grafo g) {
 
-return NULL;
-}
-//------------------------------------------------------------------------------
-// devolve 1, se v é um vértice simplicial em g, 
-//         ou
-//         0, caso contrário
-//
-// um vértice é simplicial no grafo se sua vizinhança é uma clique
+// return NULL;
+// }
+// //------------------------------------------------------------------------------
+// // devolve 1, se v é um vértice simplicial em g, 
+// //         ou
+// //         0, caso contrário
+// //
+// // um vértice é simplicial no grafo se sua vizinhança é uma clique
 
-int simplicial(vertice v, grafo g) {
+// int simplicial(vertice v, grafo g) {
 
-return 0;
-}
+// return 0;
+// }
 
-//------------------------------------------------------------------------------
-// devolve 1, se g é um grafo bipartido, 
-//         ou
-//         0, caso contrário
+// //------------------------------------------------------------------------------
+// // devolve 1, se g é um grafo bipartido, 
+// //         ou
+// //         0, caso contrário
 
-int bipartido( grafo g) {
+// int bipartido( grafo g) {
 
-  return 0;
-}
-//------------------------------------------------------------------------------
-// devolve em c um caminho mínimo de u a v no grafo não direcionado g, 
-//              de forma que
-//
-//                  c[0]=u, ..., c[n]=v, onde n é o tamanho do caminho
-//
-//              ou
-// 
-//              NULL se não existe tal caminho, 
-//
-// em qualquer caso, devolve a distância de u a v em g
+//   return 0;
+// }
+// //------------------------------------------------------------------------------
+// // devolve em c um caminho mínimo de u a v no grafo não direcionado g, 
+// //              de forma que
+// //
+// //                  c[0]=u, ..., c[n]=v, onde n é o tamanho do caminho
+// //
+// //              ou
+// // 
+// //              NULL se não existe tal caminho, 
+// //
+// // em qualquer caso, devolve a distância de u a v em g
 
-int caminho_minimo(vertice *c, vertice u, vertice v, grafo g) {
+// int caminho_minimo(vertice *c, vertice u, vertice v, grafo g) {
 
-  return 0;
-}
-//------------------------------------------------------------------------------
-// devolve o diâmetro do grafo g
+//   return 0;
+// }
+// //------------------------------------------------------------------------------
+// // devolve o diâmetro do grafo g
 
-int diametro(grafo g) {
+// int diametro(grafo g) {
 
-  return 0;
-}
-//------------------------------------------------------------------------------
+//   return 0;
+// }
+// //------------------------------------------------------------------------------
