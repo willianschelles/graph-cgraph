@@ -271,9 +271,7 @@ grafo le_grafo(FILE *input) {
   graphToOperate = copyGraph(graph);
 
   printVertices(graphToOperate);
-  // printVertices(graphToOperate);
-  
-  
+
 
   // printGraph(graph);
   if (ret < 0) return NULL;
@@ -318,10 +316,13 @@ char *nome_vertice(vertice v){
 //CUIDADO - retirando vertice ??
 vertice vertice_nome(char *s, grafo g) {
   
+  grafo graphToOperate;
+  graphToOperate = copyGraph(graph);
+
   for (int i = 0; i < g->num_vertices; i++){
     
-    if (!strcmp(s, g->vertices[i].name)) 
-      return (vertice)&g->vertices[i];
+    if (!strcmp(s, graphToOperate->vertices[i].name)) 
+      return (vertice)&graphToOperate->vertices[i];
     
   }
   return NULL;
