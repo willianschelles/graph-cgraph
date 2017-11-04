@@ -2,4 +2,8 @@ digraph willianOGrande {
      a -> b -> c -> d;
      d -> e;
      a -> f -> d;
+     a -> g;
+     a -> h;
+     a -> x;
+     g -> a	
  }

@@ -30,6 +30,7 @@ struct grafo *graph;
 struct vertice {
   char *name;
   list adjList;
+  unsigned int degree;
 };
 
 struct list {
@@ -102,15 +103,14 @@ int loadVerticesAndEdges(Agraph_t *agraph, struct grafo *graph){
     nodeName = agnameof(aNode);
     v = createVertice(nodeName);
     graph->vertices[i].name = v->name;
+    graph->vertices[i].degree = agdegree(agraph, aNode, TRUE, TRUE);
     graph->vertices[i].adjList = createList(v); 
     qttdEdges = 0;   
+
     for (e = agfstout(agraph, aNode); e; e = agnxtout(agraph, e)) {
-      // nameSrc = agnameof(agtail(e));
       nameDst = agnameof(aghead(e));    
-      // graph->vertices[i].adjList = 
       insertsNode(nameDst, graph->vertices[i].adjList, qttdEdges);
       qttdEdges++;
-      // graph->vertices[i].adjList = v->adjList;
     }
     ++i;
   }
@@ -180,15 +180,39 @@ int destroi_grafo(grafo g) {
 }
 
 
-void printVertices(grafo graph) {
+grafo copyGraph(grafo graph){
+  grafo grafo_copy = malloc(sizeof(struct grafo));
+  grafo_copy->name = nome_grafo(graph);
+  grafo_copy->directed = direcionado(graph);
+  grafo_copy->num_vertices = graph->num_vertices;
+  grafo_copy->vertices = malloc(graph->num_vertices * sizeof(struct vertice));
+
+  for(int i=0; i< graph->num_vertices; ++i){
+    grafo_copy->vertices[i] = graph->vertices[i];
+  }
   
-  for (int i = 0; i < graph->num_vertices; ++i) {
-    printf("\n%s-->", graph->vertices[i].name);
+  return grafo_copy;
+}
+
+void  printVertices(grafo g) {
+  grafo graphToOperate;
+  graphToOperate = copyGraph(graph);
+  
+  for (int i = 0; i < graphToOperate->num_vertices; ++i) {
+    graphToOperate = copyGraph(graph);
     
-    while (graph->vertices[i].adjList != NULL) {
-      if (graph->vertices[i].adjList->vertexName != NULL)
-        printf("|%s|-|->", graph->vertices[i].adjList->vertexName);
-      graph->vertices[i].adjList = graph->vertices[i].adjList->next;
+    printf("\n%s-->", graphToOperate->vertices[i].name);
+    
+    struct vertice vertexDegree = (struct vertice) graphToOperate->vertices[i];
+    
+    unsigned int degree = grau(&vertexDegree, 0, graphToOperate);
+      
+    printf("\nmy Degree|%d| -> \n", degree);
+    
+    while (graphToOperate->vertices[i].adjList != NULL) {
+      if (graphToOperate->vertices[i].adjList->vertexName != NULL)
+        printf("|%s|-|->", graphToOperate->vertices[i].adjList->vertexName);
+        graphToOperate->vertices[i].adjList = graphToOperate->vertices[i].adjList->next;
     }
     printf("\n");
   }
@@ -214,17 +238,19 @@ grafo le_grafo(FILE *input) {
   
   Agraph_t *agraph;
   int ret = 0;
-  //assing to agraph ( * to Agraph_t structure ), reading by cgraph library
-  //with input in dot description language passed in "input"
   agraph = agread(input, 0);
-
+  grafo graphToOperate;
+  
   if (!agraph) return NULL;
 
   int num_vertices = agnnodes(agraph);
-  // graph = createGraph(num_vertices);
   graph = malloc(sizeof(struct grafo));
-  graph->vertices = malloc(num_vertices * sizeof(struct vertice));
 
+  
+  // unsigned int degree = grau(&vertexDegree, -1, g);
+  
+  
+  graph->vertices = malloc(num_vertices * sizeof(struct vertice));
   
   if (!graph){
     printf("Can't malloc my graph\n");
@@ -239,11 +265,16 @@ grafo le_grafo(FILE *input) {
   graph->num_edges = agnedges(agraph);
   
   nomeGrafo = nome_grafo(graph);
-  // num_vertice = numero_vertices(graph);
-  // num_edges = numero_arestas(graph);
+  
   ret = loadVerticesAndEdges(agraph, graph);
-  printVertices(graph);
-  // ret = loadEdges(agraph, graph);
+
+  graphToOperate = copyGraph(graph);
+
+  printVertices(graphToOperate);
+  // printVertices(graphToOperate);
+  
+  
+
   // printGraph(graph);
   if (ret < 0) return NULL;
 
@@ -278,21 +309,20 @@ grafo escreve_grafo(FILE *output, grafo g) {
 // devolve o nome do vertice v
 
 char *nome_vertice(vertice v){
-
   return v->name;
 }
 //------------------------------------------------------------------------------
 // devolve um vertice de nome s no grafo g,
 //         ou 
 //         NULL caso não exista em g um vertice de nome s
-
+//CUIDADO - retirando vertice ??
 vertice vertice_nome(char *s, grafo g) {
   
   for (int i = 0; i < g->num_vertices; i++){
     
-    // if (!strcmp(s, g->adjLists[i].name)) {
-    //   return (vertice)&g->vertices[i];
-    // }
+    if (!strcmp(s, g->vertices[i].name)) 
+      return (vertice)&g->vertices[i];
+    
   }
   return NULL;
 }
@@ -305,21 +335,38 @@ vertice vertice_nome(char *s, grafo g) {
 //                
 // caso contrário o valor de direcao é ignorado.                  
 
-// unsigned int grau(vertice v, int direcao, grafo g) {
+unsigned int grau(vertice v, int direcao, grafo g) {
 
-//   unsigned int degree = 0;
-//   for (int i = 0; i < edgeNumber; ++i) {
+  unsigned int degree = 0;
+
+  if (direcao == 1) {
+
+    while (v->adjList != NULL) {
+
+      if (v->adjList->vertexName != NULL)
+        ++degree;
+      v->adjList = v->adjList->next;
+    }
+  } else if (direcao == -1) {
+
+    for (int i = 0; i < g->num_vertices; ++i) {
+        
+      while (g->vertices[i].adjList != NULL) {
+        if (g->vertices[i].adjList->vertexName) {
+          if (!(strcmp(g->vertices[i].adjList->vertexName, v->name))) /*se te elto na lista de adj
+                                                                        igual ao vertice procurado*/
+            ++degree;
+        }
+        g->vertices[i].adjList = g->vertices[i].adjList->next;
+      }
+    }
+  } else
+    return v->degree; /*get from structure that was populate in loadVerticesAndEdges()*/
     
-//     if (direcao == 0 || direcao == 1) {
-//       g->edges[i].from.name == nome_vertice(v) ? ++degree : 0 ;
-//     }
-//     if (direcao == 0 || direcao == -1) {
-//       g->edges[i].to.name == nome_vertice(v) ? ++degree : 0;
-//     }
-//   }
-  
-//   return degree;
-// }
+  return degree;
+}
+
+
 // //------------------------------------------------------------------------------
 // // devolve o "primeiro" vizinho de v em g,
 // //         ou
