@@ -48,6 +48,7 @@ struct grafo {
 };
 
 char *vertexName(vertice v) { return v->name; }
+// struct vertice firstNeighbor(vertice v) { return v->adjList->vertexName; }
 vertice nextVertex(list adjList) { return adjList->next; }
 unsigned int listLength( list adjList) { return adjList->length; }
 
@@ -206,8 +207,13 @@ void  printVertices(grafo g) {
     struct vertice vertexDegree = (struct vertice) graphToOperate->vertices[i];
     
     unsigned int degree = grau(&vertexDegree, 0, graphToOperate);
-      
+    
     printf("\nmy Degree|%d| -> \n", degree);
+    
+    struct vertice vertexNeighbor = (struct vertice) graphToOperate->vertices[i];
+    vertice skyIsANeighborhood = primeiro_vizinho(&vertexNeighbor, -1, graphToOperate);
+    if (skyIsANeighborhood != NULL)
+      printf("my skyIsANeighborhood |%s| -> \n\n", skyIsANeighborhood->name);
     
     while (graphToOperate->vertices[i].adjList != NULL) {
       if (graphToOperate->vertices[i].adjList->vertexName != NULL)
@@ -320,9 +326,10 @@ vertice vertice_nome(char *s, grafo g) {
   graphToOperate = copyGraph(graph);
 
   for (int i = 0; i < g->num_vertices; i++){
-    
-    if (!strcmp(s, graphToOperate->vertices[i].name)) 
-      return (vertice)&graphToOperate->vertices[i];
+    if (s != NULL){
+      if (!strcmp(s, graphToOperate->vertices[i].name)) 
+        return (vertice)&graphToOperate->vertices[i];
+    }
     
   }
   return NULL;
@@ -367,44 +374,38 @@ unsigned int grau(vertice v, int direcao, grafo g) {
   return degree;
 }
 
-
-// //------------------------------------------------------------------------------
-// // devolve o "primeiro" vizinho de v em g,
-// //         ou
-// //         NULL se v é vértice isolado em g
-// //
-// // se g é direcionado, e 
-// //                       direcao =  1, o vizinho devolvido é de saída   ->to
-// //                       direcao = -1, o vizinho devolvido é de entrada ->from
-// //                
-// // caso contrário o valor de direcao é ignorado e será retornado o vizinho de entrada.                  
-// // se o vizinho foi encontrado no to, devolve from e vice-versa
-// vertice primeiro_vizinho(vertice v, int direcao, grafo g) {
-
-//   for (int i = 0; i < edgeNumber; ++i) {
-//     if (g->edges[i].to.name != NULL && g->edges[i].from.name != NULL)
-//       printf("\ng->edges[i].to.name %s  |   g->edges[i].from.name %s  \n",\
-//             g->edges[i].to.name, g->edges[i].from.name);
-
-//     if (direcao == -1) {
-//       if (g->edges[i].from.name == nome_vertice(v)) {
-//         return (vertice)&g->edges[i].to;
-//       }
-//     }
-//     if (direcao = 1) {
-//       if (g->edges[i].to.name == nome_vertice(v)) {
-//         return (vertice)&g->edges[i].from;
-//       }
-//     } 
-//     else {
-//       if (((g->edges[i].to.name == nome_vertice(v)) || g->edges[i].from.name == nome_vertice(v))){
-//         if (g->edges[i].to.name != NULL) return  g->edges[i].from.name;
-//         return g->edges[i].to.name;
-//       }
-//     }
-//   }
-//   return NULL;
-// }
+//------------------------------------------------------------------------------
+// devolve o "primeiro" vizinho de v em g,
+//         ou
+//         NULL se v é vértice isolado em g
+//
+// se g é direcionado, e 
+//                       direcao =  1, o vizinho devolvido é de saída
+//                       direcao = -1, o vizinho devolvido é de entrada
+//                
+// caso contrário o valor de direcao é ignorado.
+vertice primeiro_vizinho(vertice v, int direcao, grafo g) {
+  
+  if ((direcao == 1) || (direcao == 0)) {
+    return vertice_nome(v->adjList->vertexName, g);
+  }
+  
+  else if (direcao == -1) {
+   
+    for (int i = 0; i < g->num_vertices; ++i) {
+      
+      while (g->vertices[i].adjList != NULL) {
+        if (g->vertices[i].adjList->vertexName) {
+          if (!(strcmp(g->vertices[i].adjList->vertexName, v->name))) /*se te elto na lista de adj*/
+            return vertice_nome(g->vertices[i].name, g);
+        }
+        g->vertices[i].adjList = g->vertices[i].adjList->next;
+      }
+    }
+  }
+ 
+  return NULL;
+}
 // //------------------------------------------------------------------------------
 // // devolve o "próximo" vizinho de v em g após u,
 // //         ou
