@@ -195,11 +195,22 @@ grafo copyGraph(grafo graph){
   return grafo_copy;
 }
 
+void printVerticesByInputNeighborhood(grafo g) {
+  grafo graphToOperate;
+  graphToOperate = copyGraph(graph);
+  
+  for (int i = 0; i < graphToOperate->num_vertices; ++i) {
+    graphToOperate = copyGraph(graph);
+  
+  }
+}
+
 void  printVertices(grafo g) {
   grafo graphToOperate;
   graphToOperate = copyGraph(graph);
   
   for (int i = 0; i < graphToOperate->num_vertices; ++i) {
+    
     graphToOperate = copyGraph(graph);
     
     printf("\n%s-->", graphToOperate->vertices[i].name);
@@ -211,9 +222,19 @@ void  printVertices(grafo g) {
     printf("\nmy Degree|%d| -> \n", degree);
     
     struct vertice vertexNeighbor = (struct vertice) graphToOperate->vertices[i];
-    vertice skyIsANeighborhood = primeiro_vizinho(&vertexNeighbor, -1, graphToOperate);
-    if (skyIsANeighborhood != NULL)
-      printf("my skyIsANeighborhood |%s| -> \n\n", skyIsANeighborhood->name);
+    struct vertice vertexNeighborNext = (struct vertice) graphToOperate->vertices[i];
+    // vertice u = vertice_nome("c", g);
+    // vertice v = vertice_nome(vertexNeighborNext.name, g);
+    
+    // vertice skyIsANeighborhood = primeiro_vizinho(&vertexNeighbor, -1, graphToOperate);
+    // if (skyIsANeighborhood != NULL)
+    //   printf("my skyIsANeighborhood |%s| -> \n\n", skyIsANeighborhood->name);
+    
+    // vertice skyIsNextNeighborhood = proximo_vizinho(u, v, -1, graphToOperate);
+    // if (skyIsNextNeighborhood != NULL)
+    //   printf("my skyIsANeighborhood, but NEXT |%s| -> \n\n", skyIsNextNeighborhood->name);
+    
+    graphToOperate = copyGraph(graph);
     
     while (graphToOperate->vertices[i].adjList != NULL) {
       if (graphToOperate->vertices[i].adjList->vertexName != NULL)
@@ -374,6 +395,7 @@ unsigned int grau(vertice v, int direcao, grafo g) {
   return degree;
 }
 
+
 //------------------------------------------------------------------------------
 // devolve o "primeiro" vizinho de v em g,
 //         ou
@@ -406,6 +428,7 @@ vertice primeiro_vizinho(vertice v, int direcao, grafo g) {
  
   return NULL;
 }
+
 // //------------------------------------------------------------------------------
 // // devolve o "próximo" vizinho de v em g após u,
 // //         ou
@@ -417,10 +440,54 @@ vertice primeiro_vizinho(vertice v, int direcao, grafo g) {
 // //                
 // // caso contrário o valor de direcao é ignorado.                  
 
-// vertice proximo_vizinho(vertice u, vertice v, int direcao, grafo g) {
+vertice proximo_vizinho(vertice u, vertice v, int direcao, grafo g) {
 
-// return NULL;
-// }
+  if ((direcao == 1) || (direcao == 0)) {
+    while (v->adjList != NULL) { /* percorre lista de adjacencia de v*/
+      
+      if (v->adjList->vertexName != NULL){ 
+        if (!strcmp(v->adjList->vertexName, u->name)){ /* se encontrar o vertice u na lista de v */
+          if (v->adjList->next != NULL)
+            return vertice_nome(v->adjList->next->vertexName, g); /* retorna o proximo vizinho de v */
+          return NULL;
+        } 
+      }
+      v->adjList = v->adjList->next;  
+    }
+  } else if (direcao == -1) {
+    if (vertice_nome(nome_vertice(u), g)) { /* se existe o vertice de nome u no grafo*/
+      for (int i = 0; i < g->num_vertices; ++i) {
+        
+        if (!strcmp(g->vertices[i].name, u->name)) { /* se o vertice corrente é o u: procura v na lista de ajd*/
+          while (g->vertices[i].adjList != NULL) { /* enquanto houver vértices*/
+        
+            if (g->vertices[i].adjList->vertexName) {
+              if (!(strcmp(g->vertices[i].adjList->vertexName, v->name))){/*se te v->name na lista de adj*/
+                // procura prox vértice onde v->name está na lista de adj*/
+                for (int j = i + 1; j < g->num_vertices; ++j) { /* a partir de u, procura prox guy q tem mano brow */
+                  while (g->vertices[j].adjList != NULL) { /* enquanto houver vértices*/
+                    
+                    if (g->vertices[j].adjList->vertexName) {
+                      if (!(strcmp(g->vertices[j].adjList->vertexName, v->name)) /*se te v->name na lista de adj*/
+                       && (strcmp(g->vertices[j].name, g->vertices[i].name))) /*e é diferente do proprio v*/
+                        return vertice_nome(g->vertices[j].name, g);
+                    }
+                    g->vertices[j].adjList = g->vertices[j].adjList->next;
+                  }          
+                }
+              } 
+            }
+            g->vertices[i].adjList = g->vertices[i].adjList->next;
+          }
+        }
+      }
+    } 
+
+  }
+  
+  return NULL;
+}
+
 // //------------------------------------------------------------------------------
 // // devolve 1, se v é um vértice simplicial em g, 
 // //         ou
