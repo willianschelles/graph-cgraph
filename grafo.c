@@ -11,6 +11,7 @@ struct vertice* createVertice(char *name);
 char *nome_vertice(vertice v);
 int vertexNumber = -1; 
 int edgeNumber = 0;
+typedef enum { false, true } bool;
 
 char *nomeGrafo;
 //------------------------------------------------------------------------------
@@ -52,7 +53,7 @@ char *vertexName(vertice v) { return v->name; }
 vertice nextVertex(list adjList) { return adjList->next; }
 unsigned int listLength( list adjList) { return adjList->length; }
 
-list createList(vertice v) {
+list createList() {
   list adjList = (struct list*) malloc(sizeof(struct list));
   
   if (!adjList) return NULL;
@@ -105,7 +106,7 @@ int loadVerticesAndEdges(Agraph_t *agraph, struct grafo *graph){
     v = createVertice(nodeName);
     graph->vertices[i].name = v->name;
     graph->vertices[i].degree = agdegree(agraph, aNode, TRUE, TRUE);
-    graph->vertices[i].adjList = createList(v); 
+    graph->vertices[i].adjList = createList(); 
     qttdEdges = 0;   
 
     for (e = agfstout(agraph, aNode); e; e = agnxtout(agraph, e)) {
@@ -223,16 +224,16 @@ void  printVertices(grafo g) {
     
     struct vertice vertexNeighbor = (struct vertice) graphToOperate->vertices[i];
     struct vertice vertexNeighborNext = (struct vertice) graphToOperate->vertices[i];
-    // vertice u = vertice_nome("c", g);
-    // vertice v = vertice_nome(vertexNeighborNext.name, g);
+    vertice u = vertice_nome("c", g);
+    vertice v = vertice_nome(vertexNeighborNext.name, g);
     
-    // vertice skyIsANeighborhood = primeiro_vizinho(&vertexNeighbor, -1, graphToOperate);
-    // if (skyIsANeighborhood != NULL)
-    //   printf("my skyIsANeighborhood |%s| -> \n\n", skyIsANeighborhood->name);
+    vertice skyIsANeighborhood = primeiro_vizinho(&vertexNeighbor, -1, graphToOperate);
+    if (skyIsANeighborhood != NULL)
+      printf("my skyIsANeighborhood |%s| -> \n\n", skyIsANeighborhood->name);
     
-    // vertice skyIsNextNeighborhood = proximo_vizinho(u, v, -1, graphToOperate);
-    // if (skyIsNextNeighborhood != NULL)
-    //   printf("my skyIsANeighborhood, but NEXT |%s| -> \n\n", skyIsNextNeighborhood->name);
+    vertice skyIsNextNeighborhood = proximo_vizinho(u, v, -1, graphToOperate);
+    if (skyIsNextNeighborhood != NULL)
+      printf("my skyIsANeighborhood, but NEXT |%s| -> \n\n", skyIsNextNeighborhood->name);
     
     graphToOperate = copyGraph(graph);
     
@@ -298,7 +299,16 @@ grafo le_grafo(FILE *input) {
   graphToOperate = copyGraph(graph);
 
   printVertices(graphToOperate);
+  
+  // insertsNode(char *name, list adjList, int qttdEdges) 
 
+  list set = createList();
+  insertsNode("a", set, 0);
+  insertsNode("b", set, 1);
+  insertsNode("c", set, 2);
+  ret = clique(set, graph);
+
+  printf("\n\nDeu clique?? ->> %d\n\n", ret);
 
   // printGraph(graph);
   if (ret < 0) return NULL;
@@ -408,20 +418,22 @@ unsigned int grau(vertice v, int direcao, grafo g) {
 // caso contrário o valor de direcao é ignorado.
 vertice primeiro_vizinho(vertice v, int direcao, grafo g) {
   
+  grafo graphToOperate = copyGraph(g);
+  
   if ((direcao == 1) || (direcao == 0)) {
-    return vertice_nome(v->adjList->vertexName, g);
+    return vertice_nome(v->adjList->vertexName, graphToOperate);
   }
   
   else if (direcao == -1) {
    
     for (int i = 0; i < g->num_vertices; ++i) {
       
-      while (g->vertices[i].adjList != NULL) {
-        if (g->vertices[i].adjList->vertexName) {
-          if (!(strcmp(g->vertices[i].adjList->vertexName, v->name))) /*se te elto na lista de adj*/
-            return vertice_nome(g->vertices[i].name, g);
+      while (graphToOperate->vertices[i].adjList != NULL) {
+        if (graphToOperate->vertices[i].adjList->vertexName) {
+          if (!(strcmp(graphToOperate->vertices[i].adjList->vertexName, v->name))) /*se te elto na lista de adj*/
+            return vertice_nome(graphToOperate->vertices[i].name, graphToOperate);
         }
-        g->vertices[i].adjList = g->vertices[i].adjList->next;
+        graphToOperate->vertices[i].adjList = graphToOperate->vertices[i].adjList->next;
       }
     }
   }
@@ -442,42 +454,44 @@ vertice primeiro_vizinho(vertice v, int direcao, grafo g) {
 
 vertice proximo_vizinho(vertice u, vertice v, int direcao, grafo g) {
 
+  grafo graphToOperate = copyGraph(g);
+  
   if ((direcao == 1) || (direcao == 0)) {
     while (v->adjList != NULL) { /* percorre lista de adjacencia de v*/
       
       if (v->adjList->vertexName != NULL){ 
         if (!strcmp(v->adjList->vertexName, u->name)){ /* se encontrar o vertice u na lista de v */
           if (v->adjList->next != NULL)
-            return vertice_nome(v->adjList->next->vertexName, g); /* retorna o proximo vizinho de v */
+            return vertice_nome(v->adjList->next->vertexName, graphToOperate); /* retorna o proximo vizinho de v */
           return NULL;
         } 
       }
       v->adjList = v->adjList->next;  
     }
   } else if (direcao == -1) {
-    if (vertice_nome(nome_vertice(u), g)) { /* se existe o vertice de nome u no grafo*/
+    if (vertice_nome(nome_vertice(u), graphToOperate)) { /* se existe o vertice de nome u no grafo*/
       for (int i = 0; i < g->num_vertices; ++i) {
         
-        if (!strcmp(g->vertices[i].name, u->name)) { /* se o vertice corrente é o u: procura v na lista de ajd*/
-          while (g->vertices[i].adjList != NULL) { /* enquanto houver vértices*/
+        if (!strcmp(graphToOperate->vertices[i].name, u->name)) { /* se o vertice corrente é o u: procura v na lista de ajd*/
+          while (graphToOperate->vertices[i].adjList != NULL) { /* enquanto houver vértices*/
         
-            if (g->vertices[i].adjList->vertexName) {
-              if (!(strcmp(g->vertices[i].adjList->vertexName, v->name))){/*se te v->name na lista de adj*/
+            if (graphToOperate->vertices[i].adjList->vertexName) {
+              if (!(strcmp(graphToOperate->vertices[i].adjList->vertexName, v->name))){/*se te v->name na lista de adj*/
                 // procura prox vértice onde v->name está na lista de adj*/
-                for (int j = i + 1; j < g->num_vertices; ++j) { /* a partir de u, procura prox guy q tem mano brow */
-                  while (g->vertices[j].adjList != NULL) { /* enquanto houver vértices*/
+                for (int j = i + 1; j < graphToOperate->num_vertices; ++j) { /* a partir de u, procura prox guy q tem mano brow */
+                  while (graphToOperate->vertices[j].adjList != NULL) { /* enquanto houver vértices*/
                     
-                    if (g->vertices[j].adjList->vertexName) {
-                      if (!(strcmp(g->vertices[j].adjList->vertexName, v->name)) /*se te v->name na lista de adj*/
-                       && (strcmp(g->vertices[j].name, g->vertices[i].name))) /*e é diferente do proprio v*/
-                        return vertice_nome(g->vertices[j].name, g);
+                    if (graphToOperate->vertices[j].adjList->vertexName) {
+                      if (!(strcmp(graphToOperate->vertices[j].adjList->vertexName, v->name)) /*se te v->name na lista de adj*/
+                       && (strcmp(graphToOperate->vertices[j].name, graphToOperate->vertices[i].name))) /*e é diferente do proprio v*/
+                        return vertice_nome(graphToOperate->vertices[j].name, graphToOperate);
                     }
-                    g->vertices[j].adjList = g->vertices[j].adjList->next;
+                    graphToOperate->vertices[j].adjList = graphToOperate->vertices[j].adjList->next;
                   }          
                 }
               } 
             }
-            g->vertices[i].adjList = g->vertices[i].adjList->next;
+            graphToOperate->vertices[i].adjList = graphToOperate->vertices[i].adjList->next;
           }
         }
       }
@@ -486,6 +500,111 @@ vertice proximo_vizinho(vertice u, vertice v, int direcao, grafo g) {
   }
   
   return NULL;
+}
+
+
+
+list createNeighborhood(vertice v, int direcao, grafo g) {
+  
+  list neighborhood = createList();
+  int listLength = 0;
+
+  for (vertice neighbor = primeiro_vizinho(v, direcao, g); neighbor != NULL; neighbor = proximo_vizinho(neighbor, v, direcao, g)) {
+    insertsNode(neighbor->name, neighborhood, listLength);
+    ++listLength;
+  }
+  return neighborhood;
+}
+
+int hasAllVerticesInNeighborhood(list l, list outputNeighborhood, list inputNeighborhood) {
+  
+  int foundInList = 0;
+  list outputL = l;/* equals to set, just separe to not replace data*/
+  list inputL = l;
+
+  printf("\n\nMy OUTPUTNeighborhood list is: ");
+  while (outputNeighborhood != NULL) {
+    while (outputL != NULL) {
+      if ((outputNeighborhood->vertexName != NULL) && (outputL->vertexName != NULL)) {
+          if (!strcmp(outputNeighborhood->vertexName, outputL->vertexName)){
+            printf("\n: %s ", outputNeighborhood->vertexName);
+            ++foundInList;
+            printf("\nfoundList: %d\n", foundInList);
+            
+            break;
+          }
+        }
+        outputL = outputL->next;
+        if (foundInList) continue;
+      }
+      outputNeighborhood = outputNeighborhood->next;
+      outputL = l;
+    }
+
+  // foundInList = 0;
+  printf("\n\nMy INPUTNeighborhood list is: ");
+  while (inputNeighborhood != NULL) {  /* enquanto houver vizinhanca de entrada ou conjunto de entrada*/
+    while (inputL != NULL) {
+      if (inputNeighborhood->vertexName && inputL->vertexName) {
+        if (!strcmp(inputNeighborhood->vertexName, inputL->vertexName)) {
+          printf("\n: %s ", inputNeighborhood->vertexName);
+          ++foundInList;
+          break;
+        }
+        inputL = inputL->next;
+      }
+      if (foundInList) break;
+    }
+    inputNeighborhood = inputNeighborhood->next;
+  }
+  return foundInList;
+}
+//------------------------------------------------------------------------------
+// devolve 1, se o conjunto dos vertices em l é uma clique em g, ou
+//         0, caso contrário
+//
+// um conjunto C de vértices de um grafo é uma clique em g 
+// se todo vértice em C é vizinho de todos os outros vértices de C em g
+
+    // faz um loop em cima de cada elemento da lista l      
+    // para cada elemento pega sua vizinhaca
+    // se a vizinhaca conter todos os elementos da lista l continua
+    // se não conter retorna 0
+    
+    /*{ list = ["a", "b", "c"] }*/
+int clique(list l, grafo g) {
+  
+  list inputNeighborhood = createList();
+  list outputNeighborhood = createList();
+  int isClique = 0;
+  int lLength = 0;
+  
+  if ((!inputNeighborhood) || (!outputNeighborhood)) return -1;
+
+  printf("My set list is: ");
+  while (l != NULL) {
+    printf("\n\nVertex%s ", l->vertexName);
+    vertice vertexOfl = vertice_nome(l->vertexName, g);
+    
+    outputNeighborhood = createNeighborhood(vertexOfl, 1, g);
+    inputNeighborhood = createNeighborhood(vertexOfl, -1, g);
+    
+    isClique += hasAllVerticesInNeighborhood(l, outputNeighborhood, inputNeighborhood);
+    
+    //se em output ou input tem todos os elementos da list set
+    l = l->next;
+    ++lLength;
+  }
+
+  printf("\nisClique++ = %d\n",isClique);
+  printf("\nlength++ = %d\n",lLength);
+  
+  if (isClique >= lLength)
+    return 1;
+  
+  printf("\n\n");
+    
+  return 0;
 }
 
 // //------------------------------------------------------------------------------
