@@ -3,8 +3,6 @@
 
 #include <stdio.h>
 
-typedef enum { false, true } bool;
-
 
 //------------------------------------------------------------------------------
 // o valor que representa "infinito"
