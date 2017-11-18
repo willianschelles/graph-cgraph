@@ -306,6 +306,7 @@ grafo le_grafo(FILE *input) {
   insertsNode("a", set, 0);
   insertsNode("b", set, 1);
   insertsNode("c", set, 2);
+  insertsNode("d", set, 3);
   ret = clique(set, graph);
 
   printf("\n\nDeu clique?? ->> %d\n\n", ret);
@@ -518,46 +519,32 @@ list createNeighborhood(vertice v, int direcao, grafo g) {
 
 int hasAllVerticesInNeighborhood(list l, list outputNeighborhood, list inputNeighborhood) {
   
-  int foundInList = 0;
+  int foundInListOutput = 0;
+  int foundInListInput = 0;
   list outputL = l;/* equals to set, just separe to not replace data*/
   list inputL = l;
 
-  printf("\n\nMy OUTPUTNeighborhood list is: ");
   while (outputNeighborhood != NULL) {
-    while (outputL != NULL) {
-      if ((outputNeighborhood->vertexName != NULL) && (outputL->vertexName != NULL)) {
-          if (!strcmp(outputNeighborhood->vertexName, outputL->vertexName)){
-            printf("\n: %s ", outputNeighborhood->vertexName);
-            ++foundInList;
-            printf("\nfoundList: %d\n", foundInList);
-            
-            break;
-          }
-        }
-        outputL = outputL->next;
-        if (foundInList) continue;
+    if (l->vertexName != NULL && outputNeighborhood->vertexName != NULL){
+      if (!strcmp(l->vertexName, outputNeighborhood->vertexName)) {
+        printf("\nFound it, has %s in outputNeighborhood of %s \n", l->vertexName, l->next->vertexName);
+        return 1;
       }
-      outputNeighborhood = outputNeighborhood->next;
-      outputL = l;
     }
+    outputNeighborhood = outputNeighborhood->next;
+  }
 
   // foundInList = 0;
-  printf("\n\nMy INPUTNeighborhood list is: ");
   while (inputNeighborhood != NULL) {  /* enquanto houver vizinhanca de entrada ou conjunto de entrada*/
-    while (inputL != NULL) {
-      if (inputNeighborhood->vertexName && inputL->vertexName) {
-        if (!strcmp(inputNeighborhood->vertexName, inputL->vertexName)) {
-          printf("\n: %s ", inputNeighborhood->vertexName);
-          ++foundInList;
-          break;
-        }
-        inputL = inputL->next;
+    if (l->vertexName != NULL && inputNeighborhood->vertexName != NULL){
+      if (!strcmp(l->vertexName, inputNeighborhood->vertexName)) {
+        printf("\nFound it, has %s in outputNeighborhood of %s \n", l->vertexName, l->next->vertexName);
+        return 1;
       }
-      if (foundInList) break;
     }
     inputNeighborhood = inputNeighborhood->next;
   }
-  return foundInList;
+  return -1;
 }
 //------------------------------------------------------------------------------
 // devolve 1, se o conjunto dos vertices em l é uma clique em g, ou
@@ -574,23 +561,31 @@ int hasAllVerticesInNeighborhood(list l, list outputNeighborhood, list inputNeig
     /*{ list = ["a", "b", "c"] }*/
 int clique(list l, grafo g) {
   
-  list inputNeighborhood = createList();
-  list outputNeighborhood = createList();
+
   int isClique = 0;
   int lLength = 0;
   
+  list inputNeighborhood = createList();
+  list outputNeighborhood = createList();
+  list t;
   if ((!inputNeighborhood) || (!outputNeighborhood)) return -1;
 
-  printf("My set list is: ");
+  printf("My set list is:");
   while (l != NULL) {
-    printf("\n\nVertex%s ", l->vertexName);
-    vertice vertexOfl = vertice_nome(l->vertexName, g);
-    
-    outputNeighborhood = createNeighborhood(vertexOfl, 1, g);
-    inputNeighborhood = createNeighborhood(vertexOfl, -1, g);
-    
-    isClique += hasAllVerticesInNeighborhood(l, outputNeighborhood, inputNeighborhood);
-    
+    t = l->next;
+    while (t != NULL) {
+      printf("\n\nVertex: %s ", t->vertexName);
+
+      vertice vertexNextOfl = vertice_nome(t->vertexName, g);
+      outputNeighborhood = createNeighborhood(vertexNextOfl, 1, g);
+      inputNeighborhood = createNeighborhood(vertexNextOfl, -1, g);
+      isClique = hasAllVerticesInNeighborhood(l, outputNeighborhood, inputNeighborhood);
+      printf("\nisClique++ = %d\n",isClique);      
+      if (isClique == -1)
+        return 0;
+
+      t = t->next;
+    }
     //se em output ou input tem todos os elementos da list set
     l = l->next;
     ++lLength;
@@ -599,12 +594,11 @@ int clique(list l, grafo g) {
   printf("\nisClique++ = %d\n",isClique);
   printf("\nlength++ = %d\n",lLength);
   
-  if (isClique >= lLength)
-    return 1;
+
   
   printf("\n\n");
     
-  return 0;
+  return 1;
 }
 
 // //------------------------------------------------------------------------------
