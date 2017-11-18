@@ -608,10 +608,12 @@ int clique(list l, grafo g) {
 // //
 // // um vértice é simplicial no grafo se sua vizinhança é uma clique
 
-// int simplicial(vertice v, grafo g) {
+int simplicial(vertice v, grafo g) {
 
-// return 0;
-// }
+  list neighborhood = createNeighborhood(v, 0, g);
+  
+  return clique(neighborhood, g);
+}
 
 // //------------------------------------------------------------------------------
 // // devolve 1, se g é um grafo bipartido, 
