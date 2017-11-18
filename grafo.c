@@ -32,6 +32,7 @@ struct vertice {
   char *name;
   list adjList;
   unsigned int degree;
+  unsigned int color;
 };
 
 struct list {
@@ -106,6 +107,7 @@ int loadVerticesAndEdges(Agraph_t *agraph, struct grafo *graph){
     v = createVertice(nodeName);
     graph->vertices[i].name = v->name;
     graph->vertices[i].degree = agdegree(agraph, aNode, TRUE, TRUE);
+    graph->vertices[i].color = 0;
     graph->vertices[i].adjList = createList(); 
     qttdEdges = 0;   
 
@@ -615,36 +617,147 @@ int simplicial(vertice v, grafo g) {
   return clique(neighborhood, g);
 }
 
+void findAndUpdateVertex(vertice v, grafo g) {
+  
+  for (int i = 0; i < g->num_vertices; ++i) {
+    if (!strcmp(g->vertices[i].name, v->name)){
+      g->vertices[i].name = v->name;
+      g->vertices[i].color = v->color;
+      g->vertices[i].degree = v->degree;
+      g->vertices[i].adjList = v->adjList;
+      return;
+    }
+  }
+  return; 
+}
+
 // //------------------------------------------------------------------------------
 // // devolve 1, se g é um grafo bipartido, 
 // //         ou
 // //         0, caso contrário
 
-// int bipartido( grafo g) {
+typedef enum { red = 1, blue } color;
 
-//   return 0;
-// }
-// //------------------------------------------------------------------------------
-// // devolve em c um caminho mínimo de u a v no grafo não direcionado g, 
-// //              de forma que
-// //
-// //                  c[0]=u, ..., c[n]=v, onde n é o tamanho do caminho
-// //
-// //              ou
-// // 
-// //              NULL se não existe tal caminho, 
-// //
-// // em qualquer caso, devolve a distância de u a v em g
+int bipartido(grafo g) {
+  
+  struct vertice* v = malloc(sizeof(struct vertice));
+  struct vertice* u = malloc(sizeof(struct vertice));
+  
+  list l = createList();
+  for (int i = 0; i < g->num_vertices; ++i) {
+    g->vertices[i].color = red;
+    v = vertice_nome(g->vertices[i].name, g);
+    for (vertice neighbor = primeiro_vizinho(v, 0, g); neighbor != NULL; neighbor = proximo_vizinho(neighbor, v, 0, g)) {
+      
+      if (neighbor->color == red) return 0;
+      
+      neighbor->color = blue;
+      findAndUpdateVertex(neighbor, g);
+        
+      l = createNeighborhood(neighbor, 0, g);
+      
+      while (l != NULL) {
+        u = vertice_nome(l->vertexName, g);
 
-// int caminho_minimo(vertice *c, vertice u, vertice v, grafo g) {
+        if (u->color == blue) return 0;
 
-//   return 0;
-// }
-// //------------------------------------------------------------------------------
-// // devolve o diâmetro do grafo g
+        u->color = red;
+        findAndUpdateVertex(u, g);
+        
+        l = l->next;
+      }
+    }
+  }
+  return 1;
+}
 
-// int diametro(grafo g) {
+//------------------------------------------------------------------------------
+// devolve em c um caminho mínimo de u a v no grafo não direcionado g, 
+//              de forma que
+//
+//                  c[0]=u, ..., c[n]=v, onde n é o tamanho do caminho
+//
+//              ou
+// 
+//              NULL se não existe tal caminho, 
+//
+// em qualquer caso, devolve a distância de u a v em g
 
-//   return 0;
-// }
-// //------------------------------------------------------------------------------
+int caminho_minimo(vertice *c, vertice u, vertice v, grafo g) {
+
+  struct vertice* w = malloc(sizeof(struct vertice));
+  list neighborhoodU = createList();
+  int distance = 1;
+  
+  if (neighborhoodU) return -1;
+
+  /*First attempt -> if is in neighborhood*/
+  neighborhoodU = createNeighborhood(u, 0, g);
+
+  while (neighborhoodU != NULL) {
+    
+    /*se vertice v está ja na vizinhança de u, entao simplismente atribuimos os valores de c,
+      e retornamos a distancia entre eles*/
+    if (!strcmp(neighborhoodU->vertexName, v->name)) {
+      c[0] = u;
+      for (int i = 1; i <= distance; ++i) {
+        w = vertice_nome(neighborhoodU[i-1].vertexName, g);
+        c[i] = w;
+      }
+      return distance; 
+    }
+    ++distance;
+    neighborhoodU = neighborhoodU->next;
+  }
+
+  /*Second attempt -> if is in neighborhood of your neighborhood*/
+  neighborhoodU = createNeighborhood(u, 0, g);
+  
+  while (neighborhoodU != NULL) {
+    
+    distance = 1;
+    w = vertice_nome(neighborhoodU->vertexName, g);
+    c[0] = u;
+    for (vertice neighbor = primeiro_vizinho(w, 0, g); neighbor != NULL; neighbor = proximo_vizinho(neighbor, w, 0, g)) {
+      c[distance] = neighbor;
+      if (!strcmp(neighbor->name, v->name)) {
+        return distance;
+      }
+      ++distance;
+    }
+    neighborhoodU = neighborhoodU->next;
+  }
+  c = NULL;
+
+  return infinito;
+}
+
+//------------------------------------------------------------------------------
+// devolve o diâmetro do grafo g
+
+int diametro(grafo g) {
+
+  struct vertice* u = malloc(sizeof(struct vertice));
+  struct vertice* v = malloc(sizeof(struct vertice));
+  
+  int distance = 1;
+  int lastDistance = 1;
+  vertice* c = malloc(sizeof(vertice));
+  
+  for (int i = 0; i < g->num_vertices; ++i) {
+    u = vertice_nome(g->vertices[i].name, g);
+    for (int j = i + 1; j <= g->num_vertices; ++j) {
+      v = vertice_nome(g->vertices[j].name, g);
+
+      distance = caminho_minimo(c, u, v, g);
+      
+      if (distance < lastDistance)
+        distance = lastDistance;
+      
+      lastDistance = distance;      
+    }
+  }
+
+  return distance;
+}
+//------------------------------------------------------------------------------
