@@ -5,12 +5,12 @@
 #include <stdlib.h>
 
 typedef struct list *list;
-
 int loadVertices(Agraph_t *agraph, grafo graph);
 struct vertice* createVertice(char *name);
 char *nome_vertice(vertice v);
 int vertexNumber = -1; 
 int edgeNumber = 0;
+struct grafo *graphToReturn;
 typedef enum { false, true } bool;
 
 char *nomeGrafo;
@@ -26,7 +26,7 @@ const int infinito = 0;
 // 
 // o grafo tem um nome, que é uma "string"
 
-struct grafo *graph;
+// struct grafo *graph;
 
 struct vertice {
   char *name;
@@ -143,7 +143,8 @@ char *nome_grafo(grafo g) {
 grafo grafo_nome(char *s) {
 
   // if zero, means that equals (and call second statement return), so return graph
-  return strcmp(s, nomeGrafo) ? NULL : graph;
+  // return strcmp(s, nomeGrafo) ? NULL : graphToReturn;
+  // return NULL;
 }
 
 //------------------------------------------------------------------------------
@@ -200,44 +201,44 @@ grafo copyGraph(grafo graph){
 
 void printVerticesByInputNeighborhood(grafo g) {
   grafo graphToOperate;
-  graphToOperate = copyGraph(graph);
+  graphToOperate = copyGraph(g);
   
   for (int i = 0; i < graphToOperate->num_vertices; ++i) {
-    graphToOperate = copyGraph(graph);
+    graphToOperate = copyGraph(g);
   
   }
 }
 
 void  printVertices(grafo g) {
   grafo graphToOperate;
-  graphToOperate = copyGraph(graph);
+  graphToOperate = copyGraph(g);
   
   for (int i = 0; i < graphToOperate->num_vertices; ++i) {
     
-    graphToOperate = copyGraph(graph);
+    graphToOperate = copyGraph(g);
     
     printf("\n%s-->", graphToOperate->vertices[i].name);
     
-    struct vertice vertexDegree = (struct vertice) graphToOperate->vertices[i];
+    // struct vertice vertexDegree = (struct vertice) graphToOperate->vertices[i];
     
-    unsigned int degree = grau(&vertexDegree, 0, graphToOperate);
+    // unsigned int degree = grau(&vertexDegree, 0, graphToOperate);
     
-    printf("\nmy Degree|%d| -> \n", degree);
+    // printf("\nmy Degree|%d| -> \n", degree);
     
-    struct vertice vertexNeighbor = (struct vertice) graphToOperate->vertices[i];
-    struct vertice vertexNeighborNext = (struct vertice) graphToOperate->vertices[i];
-    vertice u = vertice_nome("c", g);
-    vertice v = vertice_nome(vertexNeighborNext.name, g);
+    // struct vertice vertexNeighbor = (struct vertice) graphToOperate->vertices[i];
+    // struct vertice vertexNeighborNext = (struct vertice) graphToOperate->vertices[i];
+    // vertice u = vertice_nome("c", g);
+    // vertice v = vertice_nome(vertexNeighborNext.name, g);
     
-    vertice skyIsANeighborhood = primeiro_vizinho(&vertexNeighbor, -1, graphToOperate);
-    if (skyIsANeighborhood != NULL)
-      printf("my skyIsANeighborhood |%s| -> \n\n", skyIsANeighborhood->name);
+    // vertice skyIsANeighborhood = primeiro_vizinho(&vertexNeighbor, -1, graphToOperate);
+    // if (skyIsANeighborhood != NULL)
+    //   printf("my skyIsANeighborhood |%s| -> \n\n", skyIsANeighborhood->name);
     
-    vertice skyIsNextNeighborhood = proximo_vizinho(u, v, -1, graphToOperate);
-    if (skyIsNextNeighborhood != NULL)
-      printf("my skyIsANeighborhood, but NEXT |%s| -> \n\n", skyIsNextNeighborhood->name);
+    // vertice skyIsNextNeighborhood = proximo_vizinho(u, v, -1, graphToOperate);
+    // if (skyIsNextNeighborhood != NULL)
+    //   printf("my skyIsANeighborhood, but NEXT |%s| -> \n\n", skyIsNextNeighborhood->name);
     
-    graphToOperate = copyGraph(graph);
+    // graphToOperate = copyGraph(g);
     
     while (graphToOperate->vertices[i].adjList != NULL) {
       if (graphToOperate->vertices[i].adjList->vertexName != NULL)
@@ -248,14 +249,14 @@ void  printVertices(grafo g) {
   }
 }
 
-grafo createGraph(int num_vertices) {
-  graph = malloc(sizeof(struct grafo));
-  graph->vertices = malloc(num_vertices * sizeof(struct vertice));
+// grafo createGraph(int num_vertices) {
+//   graph = malloc(sizeof(struct grafo));
+//   graph->vertices = malloc(num_vertices * sizeof(struct vertice));
 
-  for (int i = 0; i < num_vertices; ++i) {
-    // graph->vertices[i] = NULL;
-  }
-}
+//   for (int i = 0; i < num_vertices; ++i) {
+//     // graph->vertices[i] = NULL;
+//   }
+// }
 
 //------------------------------------------------------------------------------
 // lê um grafo no formato dot de input
@@ -270,6 +271,8 @@ grafo le_grafo(FILE *input) {
   int ret = 0;
   agraph = agread(input, 0);
   grafo graphToOperate;
+  struct grafo *graph;
+  
   
   if (!agraph) return NULL;
 
@@ -304,14 +307,14 @@ grafo le_grafo(FILE *input) {
   
   // insertsNode(char *name, list adjList, int qttdEdges) 
 
-  list set = createList();
-  insertsNode("a", set, 0);
-  insertsNode("b", set, 1);
-  insertsNode("c", set, 2);
-  insertsNode("d", set, 3);
-  ret = clique(set, graph);
+  // list set = createList();
+  // insertsNode("a", set, 0);
+  // insertsNode("b", set, 1);
+  // insertsNode("c", set, 2);
+  // insertsNode("d", set, 3);
+  // ret = clique(set, graph);
 
-  printf("\n\nDeu clique?? ->> %d\n\n", ret);
+  // printf("\n\nDeu clique?? ->> %d\n\n", ret);
 
   // printGraph(graph);
   if (ret < 0) return NULL;
@@ -319,6 +322,7 @@ grafo le_grafo(FILE *input) {
   printf("Name of my graph *grafo: %s\n", nomeGrafo);
   printf("My dot graph written: \n");
   agraph = agwrite(agraph, stdout);
+    
 
   return graph;
 }
@@ -333,7 +337,31 @@ grafo le_grafo(FILE *input) {
 //         NULL, em caso de erro 
 
 grafo escreve_grafo(FILE *output, grafo g) {
-  
+
+  if (!g) {
+    return NULL;
+  }
+
+  fprintf(output, "%sgraph \"%s\" {\n",
+    g->directed ? "di" : "",
+    g->name
+  );
+
+  for (int i = 0; i < g->num_vertices; ++i) {
+    
+    while (g->vertices[i].adjList != NULL) {
+      if (g->vertices[i].adjList->vertexName) {
+        fprintf(output, "\t%s ", g->vertices[i].name);
+        if (g->vertices[i].adjList->vertexName != NULL)
+          
+          if (direcionado(g)) printf("-> %s\n", g->vertices[i].adjList->vertexName);
+          
+          else printf("-- %s\n", g->vertices[i].adjList->vertexName);
+        }
+      g->vertices[i].adjList = g->vertices[i].adjList->next;
+    }
+  }
+  fprintf(output, " }\n");
   return 0;
 }
 //------------------------------------------------------------------------------
@@ -357,7 +385,7 @@ char *nome_vertice(vertice v){
 vertice vertice_nome(char *s, grafo g) {
   
   grafo graphToOperate;
-  graphToOperate = copyGraph(graph);
+  graphToOperate = copyGraph(g);
 
   for (int i = 0; i < g->num_vertices; i++){
     if (s != NULL){
@@ -424,7 +452,8 @@ vertice primeiro_vizinho(vertice v, int direcao, grafo g) {
   grafo graphToOperate = copyGraph(g);
   
   if ((direcao == 1) || (direcao == 0)) {
-    return vertice_nome(v->adjList->vertexName, graphToOperate);
+    if (v->adjList != NULL)
+      return vertice_nome(v->adjList->vertexName, graphToOperate);
   }
   
   else if (direcao == -1) {
@@ -659,10 +688,12 @@ int bipartido(grafo g) {
       while (l != NULL) {
         u = vertice_nome(l->vertexName, g);
 
-        if (u->color == blue) return 0;
-
-        u->color = red;
-        findAndUpdateVertex(u, g);
+        if (u != NULL) {
+          if (u->color == blue)  return 0;
+          
+          u->color = red;
+          findAndUpdateVertex(u, g);
+        }
         
         l = l->next;
       }
@@ -746,15 +777,20 @@ int diametro(grafo g) {
   
   for (int i = 0; i < g->num_vertices; ++i) {
     u = vertice_nome(g->vertices[i].name, g);
-    for (int j = i + 1; j <= g->num_vertices; ++j) {
-      v = vertice_nome(g->vertices[j].name, g);
+    if (u != NULL) {
 
-      distance = caminho_minimo(c, u, v, g);
-      
-      if (distance < lastDistance)
-        distance = lastDistance;
-      
-      lastDistance = distance;      
+      for (int j = i + 1; j < g->num_vertices; ++j) {
+        
+        v = vertice_nome(g->vertices[j].name, g);
+        if (v != NULL) {
+          distance = caminho_minimo(c, u, v, g);
+          
+          if (distance < lastDistance)
+            distance = lastDistance;
+          
+          lastDistance = distance;      
+        }
+      }
     }
   }
 
